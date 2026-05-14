@@ -1,0 +1,13 @@
+{
+  "name": "benefits-api",
+  "version": "2.1.0",
+  "description": "Employee Benefits API. Payroll, contributions, time-off, and benefit enrollments.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --watch index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
