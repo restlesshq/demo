@@ -1,3 +1,5 @@
+import json
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from flask import Flask, request, jsonify, g
@@ -10,8 +12,12 @@ from data import (
     drivers,
     orders,
     coupons,
-    api_keys,
 )
+
+_users_path = os.path.join(os.path.dirname(__file__), "..", "users.json")
+with open(_users_path) as _f:
+    users = json.load(_f)
+users_by_api_key = {u["apiKey"]: u for u in users}
 
 app = Flask(__name__)
 
@@ -42,14 +48,14 @@ def _auth():
         return
     auth = request.headers.get("Authorization", "")
     token = auth[7:] if auth.startswith("Bearer ") else auth
-    account = api_keys.get(token)
-    if not account:
+    user = users_by_api_key.get(token)
+    if not user:
         raise ApiError(
             "auth_invalid_key",
             "Missing or invalid API key. Pass `Authorization: Bearer <key>`.",
             401,
         )
-    g.account = account
+    g.account = user
 
 
 # ── Helpers ───────────────────────────────────────────

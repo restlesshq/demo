@@ -16,8 +16,17 @@ Server listens on `http://localhost:3001`.
 All requests require a Bearer token in the `Authorization` header:
 
 ```sh
-curl -H "Authorization: Bearer sk_test_demo_acme_pq9d2" http://localhost:3001/v1/shipments
+curl -H "Authorization: Bearer demo_walter" http://localhost:3001/v1/shipments
 ```
+
+Sample keys (from [`../users.json`](../users.json)):
+
+| Key            | Pretending to be     |
+|----------------|----------------------|
+| `demo_walter`  | Walter Sobchak (Sobchak Security, starter plan) |
+| `demo_maude`   | Maude Lebowski (Hollywood Star Lanes, business plan) |
+| `demo_dude`    | Jeffrey Lebowski (solo, starter plan) |
+| `demo_daria`   | Daria Steen (solo, starter plan) |
 
 ## Endpoints
 

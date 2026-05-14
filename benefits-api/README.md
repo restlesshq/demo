@@ -16,10 +16,19 @@ Server listens on `http://localhost:3002`.
 Use a long-lived API token:
 
 ```sh
-curl -H "Authorization: Token pk_live_demo_sobchak_77c2" http://localhost:3002/v1/employees
+curl -H "Authorization: Token demo_walter" http://localhost:3002/v1/employees
 ```
 
 `Bearer` is also accepted for compatibility.
+
+Sample tokens (from [`../users.json`](../users.json)). Only keys with a `companyId` see meaningful data; the others authenticate but every employee/payroll list comes back empty:
+
+| Token          | Pretending to be    | Company              |
+|----------------|---------------------|----------------------|
+| `demo_walter`  | Walter Sobchak      | Sobchak Security     |
+| `demo_maude`   | Maude Lebowski      | Hollywood Star Lanes |
+| `demo_dude`    | Jeffrey Lebowski    | (none)               |
+| `demo_daria`   | Daria Steen         | (none)               |
 
 ## Endpoints
 

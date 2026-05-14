@@ -179,11 +179,6 @@ const documents = [
   { id: "doc_i9_2204", employeeId: "emp_2204", type: "I-9", year: 2018, uploadedAt: "2018-03-01T09:12:00Z" },
 ];
 
-const apiKeys = new Map([
-  ["pk_live_demo_sobchak_77c2", { id: "acct_sobchak", companyId: "cmp_01", name: "Sobchak Security" }],
-  ["pk_live_demo_lanes_a91d", { id: "acct_lanes", companyId: "cmp_02", name: "Hollywood Star Lanes" }],
-]);
-
 module.exports = {
   companies,
   employees,
@@ -195,5 +190,4 @@ module.exports = {
   timeOffBalances,
   timeOffRequests,
   documents,
-  apiKeys,
 };

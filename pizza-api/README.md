@@ -16,10 +16,19 @@ Server listens on `http://localhost:3003`.
 ## Authentication
 
 ```sh
-curl -H "Authorization: Bearer ps_live_demo_daria_77ab" http://localhost:3003/v1/menu
+curl -H "Authorization: Bearer demo_daria" http://localhost:3003/v1/menu
 ```
 
 Two roles are issued: `customer` keys can place and view orders; `operator` keys can list customers, assign drivers, and mark deliveries.
+
+Sample keys (from [`../users.json`](../users.json)):
+
+| Key            | Pretending to be    | Role     |
+|----------------|---------------------|----------|
+| `demo_daria`   | Daria Steen         | customer |
+| `demo_dude`    | Jeffrey Lebowski    | customer |
+| `demo_walter`  | Walter Sobchak      | customer |
+| `demo_maude`   | Maude Lebowski      | operator |
 
 ## Endpoints
 

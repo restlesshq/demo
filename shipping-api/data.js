@@ -116,11 +116,6 @@ const webhooks = [
   },
 ];
 
-const apiKeys = new Map([
-  ["sk_test_demo_walter_8h2js", { id: "usr_walter", name: "Walter Sobchak", plan: "starter" }],
-  ["sk_test_demo_acme_pq9d2", { id: "usr_acme", name: "Acme Corp", plan: "business" }],
-]);
-
 module.exports = {
   carriers,
   addresses,
@@ -129,5 +124,4 @@ module.exports = {
   pickups,
   returns,
   webhooks,
-  apiKeys,
 };

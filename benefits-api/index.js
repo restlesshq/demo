@@ -1,5 +1,7 @@
 const express = require("express");
 const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
 const {
   companies,
   employees,
@@ -11,8 +13,10 @@ const {
   timeOffBalances,
   timeOffRequests,
   documents,
-  apiKeys,
 } = require("./data");
+
+const users = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "users.json"), "utf8"));
+const usersByApiKey = new Map(users.map((u) => [u.apiKey, u]));
 
 const app = express();
 app.use(express.json());
@@ -43,15 +47,15 @@ app.use((req, res, next) => {
   const token = auth.startsWith("Token ") ? auth.slice(6)
     : auth.startsWith("Bearer ") ? auth.slice(7)
     : auth;
-  const account = token && apiKeys.get(token);
-  if (!account) {
+  const user = token && usersByApiKey.get(token);
+  if (!user) {
     return sendErr(res, new ApiError(
       "auth_required",
       "Missing or invalid API token. Pass `Authorization: Token <token>`.",
       401,
     ));
   }
-  req.account = account;
+  req.account = user;
   next();
 });
 

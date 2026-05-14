@@ -1,5 +1,7 @@
 const fastify = require("fastify")({ logger: true });
 const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
 const {
   carriers,
   addresses,
@@ -8,8 +10,10 @@ const {
   pickups,
   returns,
   webhooks,
-  apiKeys,
 } = require("./data");
+
+const users = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "users.json"), "utf8"));
+const usersByApiKey = new Map(users.map((u) => [u.apiKey, u]));
 
 // ── Error helper ─────────────────────────────────────
 class ApiError extends Error {
@@ -34,15 +38,15 @@ fastify.addHook("onRequest", async (req, reply) => {
 
   const auth = req.headers["authorization"] || "";
   const key = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
-  const account = key && apiKeys.get(key);
-  if (!account) {
+  const user = key && usersByApiKey.get(key);
+  if (!user) {
     throw new ApiError(
       "auth_invalid_key",
       "Missing or invalid API key. Pass a valid key as `Authorization: Bearer <key>`.",
       401,
     );
   }
-  req.account = account;
+  req.account = user;
 });
 
 // ── Helpers ──────────────────────────────────────────
@@ -355,7 +359,10 @@ fastify.post("/v1/webhooks/:id/rotate-secret", async (req) => {
 });
 
 // ── Account ──────────────────────────────────────────
-fastify.get("/v1/account", async (req) => req.account);
+fastify.get("/v1/account", async (req) => {
+  const { apiKey, ...rest } = req.account;
+  return rest;
+});
 
 // ── Start server ─────────────────────────────────────
 const PORT = Number(process.env.PORT) || 3001;

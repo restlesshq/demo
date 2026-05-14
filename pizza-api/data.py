@@ -183,7 +183,3 @@ coupons = [
     {"code": "WELCOME2024", "kind": "percent", "value": 10, "min_subtotal_cents": 0, "active": False},
 ]
 
-api_keys = {
-    "ps_live_demo_daria_77ab": {"id": "acct_daria", "name": "Daria Steen", "role": "customer"},
-    "ps_live_demo_ops_91x2": {"id": "acct_ops", "name": "Store Ops", "role": "operator"},
-}

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "usr_walter",
+    "apiKey": "demo_walter",
+    "name": "Walter Sobchak",
+    "email": "walter@sobchaksecurity.com",
+    "company": "Sobchak Security",
+    "companyId": "cmp_01",
+    "role": "customer",
+    "plan": "starter"
+  },
+  {
+    "id": "usr_maude",
+    "apiKey": "demo_maude",
+    "name": "Maude Lebowski",
+    "email": "maude@starlanes.com",
+    "company": "Hollywood Star Lanes",
+    "companyId": "cmp_02",
+    "role": "operator",
+    "plan": "business"
+  },
+  {
+    "id": "usr_dude",
+    "apiKey": "demo_dude",
+    "name": "Jeffrey Lebowski",
+    "email": "thedude@gmail.com",
+    "company": null,
+    "companyId": null,
+    "role": "customer",
+    "plan": "starter"
+  },
+  {
+    "id": "usr_daria",
+    "apiKey": "demo_daria",
+    "name": "Daria Steen",
+    "email": "daria@example.com",
+    "company": null,
+    "companyId": null,
+    "role": "customer",
+    "plan": "starter"
+  }
+]
