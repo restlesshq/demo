@@ -33,12 +33,20 @@ class ApiError(Exception):
 
 @app.errorhandler(ApiError)
 def _handle_api_error(err):
-    return jsonify({"error": {"code": err.code, "message": err.message}}), err.status
+    return (
+        jsonify({"error": {"code": err.code, "message": err.message}}),
+        err.status,
+        {"x-restless-error-code": err.code},
+    )
 
 
 @app.errorhandler(404)
 def _not_found(_):
-    return jsonify({"error": {"code": "not_found", "message": "No such route."}}), 404
+    return (
+        jsonify({"error": {"code": "not_found", "message": "No such route."}}),
+        404,
+        {"x-restless-error-code": "not_found"},
+    )
 
 
 # ── Auth ──────────────────────────────────────────────

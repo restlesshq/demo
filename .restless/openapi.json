@@ -1,0 +1,1300 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Benefits API",
+    "description": "HR and benefits administration API for managing employees, payroll, benefits enrollment, time-off requests, and company documents.",
+    "version": "2.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://example.com"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    { "name": "Internal", "description": "Internal/admin endpoints" },
+    { "name": "Account", "description": "Account and company information" },
+    { "name": "Employees", "description": "Employee management" },
+    { "name": "Payroll", "description": "Payroll management" },
+    { "name": "Benefits", "description": "Benefits catalog" },
+    { "name": "Enrollments", "description": "Employee benefit enrollments" },
+    { "name": "Contributions", "description": "Retirement and benefit contributions" },
+    { "name": "Time Off", "description": "Time-off policies, balances, and requests" },
+    { "name": "Documents", "description": "Employee documents" }
+  ],
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": ["Internal"],
+        "x-internal": true,
+        "summary": "Health check",
+        "description": "Returns the current health status, uptime, and version of the API. No authentication required.",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "uptime": { "type": "number", "description": "Server uptime in seconds", "example": 3612.45 },
+                    "version": { "type": "string", "example": "2.1.0" }
+                  },
+                  "required": ["status", "uptime", "version"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get current account",
+        "description": "Returns the authenticated account's ID, name, and associated company details.",
+        "operationId": "getAccount",
+        "responses": {
+          "200": {
+            "description": "Account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": { "type": "string", "example": "usr_01" },
+                    "name": { "type": "string", "example": "Walter Sobchak" },
+                    "company": { "$ref": "#/components/schemas/Company" }
+                  },
+                  "required": ["accountId", "name"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/company": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get company",
+        "description": "Returns the company associated with the authenticated account.",
+        "operationId": "getCompany",
+        "responses": {
+          "200": {
+            "description": "Company details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Company" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Account"],
+        "summary": "Update company",
+        "description": "Updates the company associated with the authenticated account. Accepts a partial object with fields to update.",
+        "operationId": "updateCompany",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "legalName": { "type": "string" },
+                  "dba": { "type": "string" },
+                  "ein": { "type": "string" },
+                  "addressLine1": { "type": "string" },
+                  "city": { "type": "string" },
+                  "state": { "type": "string" },
+                  "postalCode": { "type": "string" },
+                  "plan": { "type": "string" },
+                  "payrollFrequency": { "type": "string" },
+                  "nextPayDate": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated company",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Company" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/employees": {
+      "get": {
+        "tags": ["Employees"],
+        "summary": "List employees",
+        "description": "Returns all employees belonging to the authenticated account's company. Supports filtering by status, department, and employment type.",
+        "operationId": "listEmployees",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by employee status (e.g. active, terminated)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "department",
+            "in": "query",
+            "description": "Filter by department name",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "employmentType",
+            "in": "query",
+            "description": "Filter by employment type (salary or hourly)",
+            "schema": { "type": "string", "enum": ["salary", "hourly"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of employees",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Employee" }
+                    },
+                    "count": { "type": "integer" }
+                  },
+                  "required": ["data", "count"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Employees"],
+        "summary": "Create employee",
+        "description": "Creates a new employee in the authenticated account's company. If employmentType is \"salary\", annualSalaryCents is required. If employmentType is \"hourly\", hourlyRateCents is required.",
+        "operationId": "createEmployee",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "startDate": { "type": "string", "format": "date" },
+                  "employmentType": { "type": "string", "enum": ["salary", "hourly"] },
+                  "annualSalaryCents": { "type": "integer", "description": "Required when employmentType is salary" },
+                  "hourlyRateCents": { "type": "integer", "description": "Required when employmentType is hourly" },
+                  "title": { "type": "string" },
+                  "department": { "type": "string" },
+                  "ssnLast4": { "type": "string" },
+                  "dob": { "type": "string", "format": "date" }
+                },
+                "required": ["firstName", "lastName", "email", "startDate", "employmentType"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Employee created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Employee" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/v1/employees/{id}": {
+      "get": {
+        "tags": ["Employees"],
+        "summary": "Get employee",
+        "description": "Returns a single employee by ID, scoped to the authenticated account's company.",
+        "operationId": "getEmployee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Employee ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employee details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Employee" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Employees"],
+        "summary": "Update employee",
+        "description": "Updates an existing employee by ID. Accepts a partial object with fields to update.",
+        "operationId": "updateEmployee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Employee ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "title": { "type": "string" },
+                  "department": { "type": "string" },
+                  "employmentType": { "type": "string", "enum": ["salary", "hourly"] },
+                  "annualSalaryCents": { "type": "integer" },
+                  "hourlyRateCents": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated employee",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Employee" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/employees/{id}/terminate": {
+      "post": {
+        "tags": ["Employees"],
+        "summary": "Terminate employee",
+        "description": "Terminates an active employee. Optionally accepts a termination date and reason. Returns a 409 if the employee is already terminated.",
+        "operationId": "terminateEmployee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Employee ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "terminationDate": { "type": "string", "format": "date", "description": "Defaults to today if not provided" },
+                  "reason": { "type": "string", "description": "Defaults to \"voluntary\" if not provided" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Employee terminated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Employee" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Employee is already terminated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/employees/{id}/rehire": {
+      "post": {
+        "tags": ["Employees"],
+        "summary": "Rehire employee",
+        "description": "Rehires a previously terminated employee, setting their status back to active and clearing termination details.",
+        "operationId": "rehireEmployee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Employee ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employee rehired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Employee" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/payrolls": {
+      "get": {
+        "tags": ["Payroll"],
+        "summary": "List payrolls",
+        "description": "Returns all payroll runs for the authenticated account's company.",
+        "operationId": "listPayrolls",
+        "responses": {
+          "200": {
+            "description": "List of payrolls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Payroll" }
+                    },
+                    "count": { "type": "integer" }
+                  },
+                  "required": ["data", "count"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Payroll"],
+        "summary": "Create payroll",
+        "description": "Creates a new payroll run in draft status. Active employees are automatically included, and amounts are initialized to zero.",
+        "operationId": "createPayroll",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "periodStart": { "type": "string", "format": "date" },
+                  "periodEnd": { "type": "string", "format": "date" },
+                  "payDate": { "type": "string", "format": "date" }
+                },
+                "required": ["periodStart", "periodEnd", "payDate"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payroll created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Payroll" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/v1/payrolls/{id}": {
+      "get": {
+        "tags": ["Payroll"],
+        "summary": "Get payroll",
+        "description": "Returns a single payroll run by ID, scoped to the authenticated account's company.",
+        "operationId": "getPayroll",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Payroll ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payroll details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Payroll" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/payrolls/{id}/submit": {
+      "post": {
+        "tags": ["Payroll"],
+        "summary": "Submit payroll",
+        "description": "Submits a draft payroll for processing. Returns a 409 if the payroll has already been paid.",
+        "operationId": "submitPayroll",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Payroll ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payroll submitted for processing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Payroll" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Payroll has already been paid",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payrolls/{id}/cancel": {
+      "post": {
+        "tags": ["Payroll"],
+        "summary": "Cancel payroll",
+        "description": "Cancels a payroll run. Returns a 409 if the payroll has already been paid.",
+        "operationId": "cancelPayroll",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Payroll ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payroll cancelled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Payroll" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Cannot cancel a paid payroll",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/benefits": {
+      "get": {
+        "tags": ["Benefits"],
+        "summary": "List benefits",
+        "description": "Returns all available benefit plans (medical, dental, vision, retirement, etc.).",
+        "operationId": "listBenefits",
+        "responses": {
+          "200": {
+            "description": "List of benefits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Benefit" }
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/benefits/{id}": {
+      "get": {
+        "tags": ["Benefits"],
+        "summary": "Get benefit",
+        "description": "Returns a single benefit plan by ID.",
+        "operationId": "getBenefit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Benefit ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Benefit details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Benefit" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/enrollments": {
+      "get": {
+        "tags": ["Enrollments"],
+        "summary": "List enrollments",
+        "description": "Returns all benefit enrollments for employees in the authenticated account's company.",
+        "operationId": "listEnrollments",
+        "responses": {
+          "200": {
+            "description": "List of enrollments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Enrollment" }
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Enrollments"],
+        "summary": "Create enrollment",
+        "description": "Enrolls an employee in a benefit plan. The employee and benefit must both exist. The enrollment is created in pending status.",
+        "operationId": "createEnrollment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "employeeId": { "type": "string" },
+                  "benefitId": { "type": "string" },
+                  "effectiveDate": { "type": "string", "format": "date" },
+                  "dependents": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "employeeContributionCents": { "type": "integer" },
+                  "employerContributionCents": { "type": "integer" }
+                },
+                "required": ["employeeId", "benefitId", "effectiveDate"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Enrollment created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Enrollment" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/v1/enrollments/{id}": {
+      "delete": {
+        "tags": ["Enrollments"],
+        "summary": "Terminate enrollment",
+        "description": "Terminates an active benefit enrollment by setting its status to terminated.",
+        "operationId": "terminateEnrollment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Enrollment ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Enrollment terminated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Enrollment" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/contributions": {
+      "get": {
+        "tags": ["Contributions"],
+        "summary": "List contributions",
+        "description": "Returns all contributions for employees in the authenticated account's company.",
+        "operationId": "listContributions",
+        "responses": {
+          "200": {
+            "description": "List of contributions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Contribution" }
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Contributions"],
+        "summary": "Create contribution",
+        "description": "Creates a new contribution record for an employee (e.g. 401k traditional, Roth).",
+        "operationId": "createContribution",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "employeeId": { "type": "string" },
+                  "type": { "type": "string", "description": "Contribution type (e.g. 401k_traditional, roth)" },
+                  "percent": { "type": "number", "description": "Employee contribution percentage" },
+                  "employerMatchPercent": { "type": "number", "description": "Employer match percentage. Defaults to 0." },
+                  "periodId": { "type": "string" },
+                  "amountCents": { "type": "integer" }
+                },
+                "required": ["employeeId", "type", "percent"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contribution created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Contribution" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/v1/time-off/policies": {
+      "get": {
+        "tags": ["Time Off"],
+        "summary": "List time-off policies",
+        "description": "Returns all available time-off policies (PTO, sick leave, etc.) with accrual rates and maximum balances.",
+        "operationId": "listTimeOffPolicies",
+        "responses": {
+          "200": {
+            "description": "List of policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TimeOffPolicy" }
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/time-off/balances/{employeeId}": {
+      "get": {
+        "tags": ["Time Off"],
+        "summary": "Get time-off balances",
+        "description": "Returns the time-off balances for a specific employee across all policies.",
+        "operationId": "getTimeOffBalances",
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "description": "Employee ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employee time-off balances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "employeeId": { "type": "string" },
+                    "balances": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TimeOffBalance" }
+                    }
+                  },
+                  "required": ["employeeId", "balances"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/time-off/requests": {
+      "get": {
+        "tags": ["Time Off"],
+        "summary": "List time-off requests",
+        "description": "Returns all time-off requests for employees in the authenticated account's company. Supports filtering by status.",
+        "operationId": "listTimeOffRequests",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by request status (e.g. pending, approved, denied)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of time-off requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TimeOffRequest" }
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Time Off"],
+        "summary": "Create time-off request",
+        "description": "Submits a new time-off request for an employee. The employee must belong to the authenticated account's company.",
+        "operationId": "createTimeOffRequest",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "employeeId": { "type": "string" },
+                  "policyId": { "type": "string" },
+                  "startDate": { "type": "string", "format": "date" },
+                  "endDate": { "type": "string", "format": "date" },
+                  "hours": { "type": "number" },
+                  "reason": { "type": "string" }
+                },
+                "required": ["employeeId", "policyId", "startDate", "endDate", "hours"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Time-off request created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TimeOffRequest" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/v1/time-off/requests/{id}/approve": {
+      "post": {
+        "tags": ["Time Off"],
+        "summary": "Approve time-off request",
+        "description": "Approves a pending time-off request. Returns a 409 if the request is not in pending status.",
+        "operationId": "approveTimeOffRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Time-off request ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request approved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TimeOffRequest" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Request is not in pending status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/time-off/requests/{id}/deny": {
+      "post": {
+        "tags": ["Time Off"],
+        "summary": "Deny time-off request",
+        "description": "Denies a pending time-off request. Optionally accepts a reason for the denial. Returns a 409 if the request is not in pending status.",
+        "operationId": "denyTimeOffRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Time-off request ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": { "type": "string", "description": "Reason for denying the request" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request denied",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TimeOffRequest" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Request is not in pending status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents": {
+      "get": {
+        "tags": ["Documents"],
+        "summary": "List documents",
+        "description": "Returns all documents for employees in the authenticated account's company.",
+        "operationId": "listDocuments",
+        "responses": {
+          "200": {
+            "description": "List of documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Document" }
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/v1/documents/{id}": {
+      "get": {
+        "tags": ["Documents"],
+        "summary": "Get document",
+        "description": "Returns a single document by ID.",
+        "operationId": "getDocument",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Document ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Document" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/v1/documents/{id}/sign-url": {
+      "post": {
+        "tags": ["Documents"],
+        "summary": "Generate document signing URL",
+        "description": "Generates a temporary, signed URL for accessing or signing the document. The URL expires after 10 minutes.",
+        "operationId": "getDocumentSignUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Document ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed URL generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "documentId": { "type": "string" },
+                    "url": { "type": "string", "format": "uri", "description": "Temporary signed URL for the document" },
+                    "expiresAt": { "type": "string", "format": "date-time", "description": "When the URL expires" }
+                  },
+                  "required": ["documentId", "url", "expiresAt"]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Pass your API token via the Authorization header: `Authorization: Token <token>` or `Authorization: Bearer <token>`"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "description": "Machine-readable error code" },
+              "message": { "type": "string", "description": "Human-readable error message" }
+            },
+            "required": ["code", "message"]
+          }
+        },
+        "required": ["error"]
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "cmp_01" },
+          "legalName": { "type": "string", "example": "Sobchak Security LLC" },
+          "dba": { "type": "string", "example": "Sobchak Security" },
+          "ein": { "type": "string", "example": "85-2244719" },
+          "addressLine1": { "type": "string", "example": "608 Venezia Ave" },
+          "city": { "type": "string", "example": "Venice" },
+          "state": { "type": "string", "example": "CA" },
+          "postalCode": { "type": "string", "example": "90291" },
+          "plan": { "type": "string", "example": "complete" },
+          "payrollFrequency": { "type": "string", "example": "biweekly" },
+          "nextPayDate": { "type": "string", "format": "date", "example": "2026-05-22" }
+        },
+        "required": ["id", "legalName"]
+      },
+      "Employee": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "emp_2204" },
+          "companyId": { "type": "string", "example": "cmp_01" },
+          "firstName": { "type": "string", "example": "Walter" },
+          "lastName": { "type": "string", "example": "Sobchak" },
+          "email": { "type": "string", "format": "email", "example": "walter@sobchaksecurity.example" },
+          "title": { "type": "string", "example": "Owner" },
+          "department": { "type": "string", "example": "Operations" },
+          "employmentType": { "type": "string", "enum": ["salary", "hourly"] },
+          "annualSalaryCents": { "type": "integer", "description": "Present when employmentType is salary" },
+          "hourlyRateCents": { "type": "integer", "description": "Present when employmentType is hourly" },
+          "startDate": { "type": "string", "format": "date", "example": "2018-03-01" },
+          "status": { "type": "string", "enum": ["active", "terminated"], "example": "active" },
+          "ssnLast4": { "type": "string", "example": "9921" },
+          "dob": { "type": "string", "format": "date", "example": "1942-04-12" },
+          "terminationDate": { "type": "string", "format": "date", "description": "Present when status is terminated" },
+          "terminationReason": { "type": "string", "description": "Present when status is terminated" }
+        },
+        "required": ["id", "companyId", "firstName", "lastName", "email", "employmentType", "startDate", "status"]
+      },
+      "Payroll": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "pay_2026_10" },
+          "companyId": { "type": "string", "example": "cmp_01" },
+          "periodStart": { "type": "string", "format": "date" },
+          "periodEnd": { "type": "string", "format": "date" },
+          "payDate": { "type": "string", "format": "date" },
+          "status": { "type": "string", "enum": ["draft", "processing", "paid", "cancelled"] },
+          "employees": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of employee IDs included in this payroll"
+          },
+          "grossCents": { "type": "integer" },
+          "netCents": { "type": "integer" },
+          "taxesCents": { "type": "integer" },
+          "deductionsCents": { "type": "integer" }
+        },
+        "required": ["id", "companyId", "periodStart", "periodEnd", "payDate", "status"]
+      },
+      "Benefit": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "ben_med_ppo" },
+          "type": { "type": "string", "enum": ["medical", "dental", "vision", "retirement"], "example": "medical" },
+          "name": { "type": "string", "example": "Anthem Blue PPO 1000" },
+          "carrier": { "type": "string", "example": "Anthem" },
+          "monthlyPremiumCents": { "type": "integer", "example": 64200 }
+        },
+        "required": ["id", "type", "name", "carrier", "monthlyPremiumCents"]
+      },
+      "Enrollment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "enr_01" },
+          "employeeId": { "type": "string", "example": "emp_2204" },
+          "benefitId": { "type": "string", "example": "ben_med_ppo" },
+          "dependents": {
+            "type": "array",
+            "items": { "type": "string" },
+            "example": ["spouse"]
+          },
+          "employeeContributionCents": { "type": "integer", "example": 21000 },
+          "employerContributionCents": { "type": "integer", "example": 43200 },
+          "effectiveDate": { "type": "string", "format": "date", "example": "2025-01-01" },
+          "status": { "type": "string", "enum": ["pending", "active", "terminated"], "example": "active" }
+        },
+        "required": ["id", "employeeId", "benefitId", "effectiveDate", "status"]
+      },
+      "Contribution": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "ct_01" },
+          "employeeId": { "type": "string", "example": "emp_2204" },
+          "type": { "type": "string", "example": "401k_traditional" },
+          "percent": { "type": "number", "example": 6 },
+          "employerMatchPercent": { "type": "number", "example": 4 },
+          "periodId": { "type": "string", "example": "pay_2026_10" },
+          "amountCents": { "type": "integer", "example": 27000 }
+        },
+        "required": ["id", "employeeId", "type", "percent"]
+      },
+      "TimeOffPolicy": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "pol_pto" },
+          "name": { "type": "string", "example": "Paid Time Off" },
+          "type": { "type": "string", "enum": ["pto", "sick"], "example": "pto" },
+          "accrualHoursPerPayPeriod": { "type": "number", "example": 6 },
+          "maxBalanceHours": { "type": "number", "example": 200 }
+        },
+        "required": ["id", "name", "type", "accrualHoursPerPayPeriod", "maxBalanceHours"]
+      },
+      "TimeOffBalance": {
+        "type": "object",
+        "properties": {
+          "employeeId": { "type": "string", "example": "emp_2204" },
+          "policyId": { "type": "string", "example": "pol_pto" },
+          "balanceHours": { "type": "number", "example": 122.5 }
+        },
+        "required": ["employeeId", "policyId", "balanceHours"]
+      },
+      "TimeOffRequest": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "tor_01" },
+          "employeeId": { "type": "string", "example": "emp_2205" },
+          "policyId": { "type": "string", "example": "pol_pto" },
+          "startDate": { "type": "string", "format": "date" },
+          "endDate": { "type": "string", "format": "date" },
+          "hours": { "type": "number", "example": 32 },
+          "status": { "type": "string", "enum": ["pending", "approved", "denied"] },
+          "reason": { "type": "string" },
+          "approvedAt": { "type": "string", "format": "date-time", "description": "Set when the request is approved" },
+          "deniedAt": { "type": "string", "format": "date-time", "description": "Set when the request is denied" },
+          "denialReason": { "type": "string", "nullable": true, "description": "Reason for denial, if provided" }
+        },
+        "required": ["id", "employeeId", "policyId", "startDate", "endDate", "hours", "status"]
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "doc_w4_2204" },
+          "employeeId": { "type": "string", "example": "emp_2204" },
+          "type": { "type": "string", "example": "W-4" },
+          "year": { "type": "integer", "example": 2026 },
+          "uploadedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "employeeId", "type", "year", "uploadedAt"]
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid API token",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation failed (missing or invalid fields)",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}

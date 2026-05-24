@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "apis": [
+    {
+      "name": "Demo Benefits API",
+      "rootDir": "benefits-api",
+      "oasFile": ".restless/openapi.json",
+      "framework": "Express",
+      "language": "javascript",
+      "baseUrl": "https://example.com",
+      "internal": false,
+      "testCurl": "curl -sS https://example.com/v1/account -H \"Authorization: Bearer API_KEY_HERE\"",
+      "lastSyncedAt": "2026-05-21T20:29:06.999Z",
+      "id": "ab8e6401-bc8d-441d-82fc-4a498d007344",
+      "requestIdPrefix": "DEM",
+      "projectId": "a0d1b5c7-cd4f-49de-a162-2e440ef7c0d7"
+    }
+  ]
+}

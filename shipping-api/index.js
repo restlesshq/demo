@@ -26,7 +26,10 @@ class ApiError extends Error {
 
 fastify.setErrorHandler((err, req, reply) => {
   if (err instanceof ApiError) {
-    reply.code(err.status).send({ error: { code: err.code, message: err.message } });
+    reply
+      .code(err.status)
+      .header("x-restless-error-code", err.code)
+      .send({ error: { code: err.code, message: err.message } });
     return;
   }
   reply.send(err);
